@@ -21,7 +21,7 @@ statefulSet:
         - secretName: postgres-secret
           envs:
             - name: POSTGRES_PASSWORD
-              key: POSTGRES_PASSWORD
+              key: PASSWORD
       volumeMounts:
         - name: storage
           mountPath: /var/lib/postgresql/data
@@ -31,49 +31,39 @@ statefulSet:
       type: pvc
       typeName: storage-pvc
 
-job:
-  containers:
-    - name: scripts
-      image:
-        repository: flaminel/scripts
-        tag: latest
-      resources:
-        requests:
-          cpu: 0m
-          memory: 0Mi
-        limits:
-          cpu: 200m
-          memory: 64Mi
-      command:
-        - /bin/bash
-        - -c
-        - /src/postgres/init.sh
-      env:
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_HOST
-          value: service.postgres.svc.cluster.local
-      envFromSecret:
-        - secretName: postgres-secret
-          envs:
-            - name: POSTGRES_PASSWORD
-              key: POSTGRES_PASSWORD
-        - secretName: authelia-secret
-          envs:
-            - name: AUTHELIA_USER
-              key: AUTHELIA_USER
-            - name: AUTHELIA_PASSWORD
-              key: AUTHELIA_PASSWORD
-
-infisicalSecrets:
-  - name: infisical-postgres-secret
-    serviceTokenSecretName: service-token
-    secretsPath: /postgresql
-    secretName: postgres-secret
-  - name: infisical-authelia-secret
-    serviceTokenSecretName: service-token
-    secretsPath: /authelia
-    secretName: authelia-secret
+# job:
+#   containers:
+#     - name: scripts
+#       image:
+#         repository: flaminel/scripts
+#         tag: latest
+#       resources:
+#         requests:
+#           cpu: 0m
+#           memory: 0Mi
+#         limits:
+#           cpu: 200m
+#           memory: 64Mi
+#       command:
+#         - /bin/bash
+#         - -c
+#         - /src/postgres/init.sh
+#       env:
+#         - name: POSTGRES_USER
+#           value: postgres
+#         - name: POSTGRES_HOST
+#           value: service.postgres.svc.cluster.local
+#       envFromSecret:
+#         - secretName: postgres-secret
+#           envs:
+#             - name: POSTGRES_PASSWORD
+#               key: POSTGRES_PASSWORD
+#         - secretName: authelia-secret
+#           envs:
+#             - name: AUTHELIA_USER
+#               key: AUTHELIA_USER
+#             - name: AUTHELIA_PASSWORD
+#               key: AUTHELIA_PASSWORD
 
 pvcs:
   - name: storage-pvc
@@ -93,3 +83,9 @@ services:
       - name: postgres
         protocol: TCP
         port: 5432
+
+vaultSecrets:
+  - name: postgres-secret
+    path: secrets/rabbitmq
+    templates:
+      PASSWORD: "{% .Secrets.password %}"
